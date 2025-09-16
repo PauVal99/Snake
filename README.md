@@ -1,4 +1,4 @@
-## snake
+## Snake
 
 ### Description
 
