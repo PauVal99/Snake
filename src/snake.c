@@ -53,13 +53,19 @@ Snake CreateSnake(int initBodySize, int maxBodySize, int tileSize)
     return snake;
 }
 
-Apple CreateApple(int tileSize)
+Vector2 GetValidApplePosition(Snake snake, int tileSize)
 {
-    Apple apple = {
-        {GetRandomValue(0, ROWS - 1) * tileSize,
-         GetRandomValue(0, COLUMNS - 1) * tileSize,
-         tileSize,
-         tileSize}};
+    Vector2 position = {GetRandomValue(0, ROWS - 1) * tileSize, GetRandomValue(0, COLUMNS - 1) * tileSize};
+    for (int i = 0; i < snake.bodySize; i++)
+        if ((position.x == snake.body[i].rectangle.x) && (position.y == snake.body[i].rectangle.y))
+            return GetValidApplePosition(snake, tileSize);
+    return position;
+}
+
+Apple CreateApple(Snake snake, int tileSize)
+{
+    Vector2 position = GetValidApplePosition(snake, tileSize);
+    Apple apple = {(Rectangle){position.x, position.y, tileSize, tileSize}};
     return apple;
 }
 
@@ -74,12 +80,12 @@ int main(void)
     const int maxBodySize = ROWS * COLUMNS;
 
     const int stepSize = tileSize;
-    const float stepTime = 1.0f;
+    const float stepTime = 0.25f;
 
     InitWindow(screenWidth, screenHeight, "Snake 🐍");
 
     Snake snake = CreateSnake(initBodySize, maxBodySize, tileSize);
-    Apple apple = CreateApple(tileSize);
+    Apple apple = CreateApple(snake, tileSize);
 
     float timer = 0.0f;
     int score = 0;
@@ -144,8 +150,9 @@ int main(void)
         if ((snake.body[HEAD].rectangle.x == apple.rectangle.x) && (snake.body[HEAD].rectangle.y == apple.rectangle.y))
         {
             snake.body[HEAD].apple = true;
-            apple.rectangle.x = GetRandomValue(0, ROWS - 1) * tileSize;
-            apple.rectangle.y = GetRandomValue(0, COLUMNS - 1) * tileSize;
+            Vector2 newApplePosition = GetValidApplePosition(snake, tileSize);
+            apple.rectangle.x = newApplePosition.x;
+            apple.rectangle.y = newApplePosition.y;
             score++;
         }
 

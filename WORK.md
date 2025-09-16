@@ -7,5 +7,4 @@
 ### Bugs
 
 - Snake can go in opposite direction if changed direction two times before step.
-- Apple can spawn inside Snake.
 - Snake takes one additional step to appear in the other side.
