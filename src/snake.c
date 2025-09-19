@@ -20,6 +20,7 @@ typedef enum
 typedef struct SnakeBody
 {
     bool apple;
+    Direction direction;
     Vector2 position;
 } SnakeBody;
 
@@ -48,6 +49,7 @@ static float tileSize = 28.8f;
 static Snake snake;
 static Apple apple;
 static bool pause = false;
+static bool victory = false;
 static int score = 0;
 static float timer = 0.0f;
 
@@ -55,7 +57,11 @@ static void Init(void);
 static void InitGame(void);
 static void Update(void);
 static void Draw(void);
+static void Move(void);
+static void MoveHead(void);
+static void MoveBody(void);
 static void Die(void);
+static void Victory(void);
 static void Eat(void);
 static void InputDirection(void);
 
@@ -105,6 +111,7 @@ Snake CreateSnake(int initBodySize, int maxBodySize)
     for (int i = 0; i < initBodySize; i++)
     {
         snake.body[i].apple = false;
+        snake.body[i].direction = RIGHT;
         snake.body[i].position.x = 10 - i;
         snake.body[i].position.y = 10;
     }
@@ -124,65 +131,92 @@ void Update(void)
     if (pause)
         return;
 
+    Move();
+    Victory();
+    Die();
+    Eat();
+    InputDirection();
+}
+
+void Move(void)
+{
     timer += GetFrameTime();
 
     if (timer >= stepTime)
     {
         timer = 0.0f;
         snake.prevDirection = snake.direction;
-        for (int i = maxBodySize; i > HEAD; i--)
-        {
-            if ((i == snake.bodySize) && (snake.body[i - 1].apple))
-            {
-                snake.body[i - 1].apple = false;
-
-                snake.body[snake.bodySize].apple = false;
-                snake.body[snake.bodySize].position.x = snake.body[i].position.x;
-                snake.body[snake.bodySize].position.y = snake.body[i].position.y;
-                snake.bodySize++;
-            }
-            snake.body[i].apple = snake.body[i - 1].apple;
-            snake.body[i - 1].apple = false;
-            snake.body[i].position.x = snake.body[i - 1].position.x;
-            snake.body[i].position.y = snake.body[i - 1].position.y;
-        }
-        switch (snake.direction)
-        {
-        case UP:
-            snake.body[HEAD].position.y -= ONE;
-            if (snake.body[HEAD].position.y < 0)
-                snake.body[HEAD].position.y = ROWS - 1;
-            break;
-        case RIGHT:
-            snake.body[HEAD].position.x += ONE;
-            if (snake.body[HEAD].position.x >= COLUMNS)
-                snake.body[HEAD].position.x = 0;
-            break;
-        case DOWN:
-            snake.body[HEAD].position.y += ONE;
-            if (snake.body[HEAD].position.y >= ROWS)
-                snake.body[HEAD].position.y = 0;
-            break;
-        case LEFT:
-            snake.body[HEAD].position.x -= ONE;
-            if (snake.body[HEAD].position.x < 0)
-                snake.body[HEAD].position.x = COLUMNS - 1;
-            break;
-        default:
-            snake.body[HEAD].position.x += ONE;
-            if (snake.body[HEAD].position.x >= COLUMNS)
-                snake.body[HEAD].position.x = 0;
-            break;
-        }
+        MoveBody();
+        MoveHead();
     }
+}
 
-    Die();
-    Eat();
-    InputDirection();
+void MoveBody(void)
+{
+    for (int i = maxBodySize; i > HEAD; i--)
+    {
+        if ((i == snake.bodySize) && (snake.body[i - 1].apple))
+        {
+            snake.body[i - 1].apple = false;
+            snake.body[snake.bodySize].apple = false;
+            snake.body[snake.bodySize].position.x = snake.body[i].position.x;
+            snake.body[snake.bodySize].position.y = snake.body[i].position.y;
+            snake.bodySize++;
+        }
+        snake.body[i].apple = snake.body[i - 1].apple;
+        snake.body[i - 1].apple = false;
+        snake.body[i].direction = snake.body[i - 1].direction;
+        snake.body[i].position.x = snake.body[i - 1].position.x;
+        snake.body[i].position.y = snake.body[i - 1].position.y;
+    }
+}
+
+void MoveHead(void)
+{
+    snake.body[HEAD].direction = snake.direction;
+    switch (snake.direction)
+    {
+    case UP:
+        snake.body[HEAD].position.y -= ONE;
+        if (snake.body[HEAD].position.y < 0)
+            snake.body[HEAD].position.y = ROWS - 1;
+        break;
+    case RIGHT:
+        snake.body[HEAD].position.x += ONE;
+        if (snake.body[HEAD].position.x >= COLUMNS)
+            snake.body[HEAD].position.x = 0;
+        break;
+    case DOWN:
+        snake.body[HEAD].position.y += ONE;
+        if (snake.body[HEAD].position.y >= ROWS)
+            snake.body[HEAD].position.y = 0;
+        break;
+    case LEFT:
+        snake.body[HEAD].position.x -= ONE;
+        if (snake.body[HEAD].position.x < 0)
+            snake.body[HEAD].position.x = COLUMNS - 1;
+        break;
+    default:
+        snake.body[HEAD].position.x += ONE;
+        if (snake.body[HEAD].position.x >= COLUMNS)
+            snake.body[HEAD].position.x = 0;
+        break;
+    }
+}
+
+void Victory(void)
+{
+    if (snake.bodySize == (ROWS * COLUMNS))
+    {
+        pause = true;
+        victory = true;
+    }
 }
 
 void Die(void)
 {
+    if (victory)
+        return;
     for (int i = 4; i < snake.bodySize; i++)
         if ((snake.body[HEAD].position.x == snake.body[i].position.x) && (snake.body[HEAD].position.y == snake.body[i].position.y))
             InitGame();
@@ -214,19 +248,18 @@ void Draw(void)
 {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
-    float marginX = 72.0f;
-    float marginY = 72.0f;
+    Vector2 margin = (Vector2){72.0f, 72.0f};
     if (screenHeight <= screenWidth)
     {
-        marginY = (float)(screenHeight * minMarginPercent) / 100;
-        boardSize = screenHeight - marginY - marginY;
-        marginX = (float)(screenWidth - boardSize) / 2;
+        margin.y = (float)(screenHeight * minMarginPercent) / 100;
+        boardSize = screenHeight - margin.y - margin.y;
+        margin.x = (float)(screenWidth - boardSize) / 2;
     }
     else
     {
-        marginX = (float)(screenWidth * minMarginPercent) / 100;
-        boardSize = screenHeight - marginX - marginX;
-        marginY = (float)(screenHeight - boardSize) / 2;
+        margin.x = (float)(screenWidth * minMarginPercent) / 100;
+        boardSize = screenWidth - margin.x - margin.x;
+        margin.y = (float)(screenHeight - boardSize) / 2;
     }
 
     tileSize = (float)boardSize / ROWS;
@@ -237,17 +270,16 @@ void Draw(void)
 
     for (int i = 0; i <= COLUMNS; i++)
     {
-        int x = marginX + (i * tileSize);
-        DrawLine(x, marginY, x, screenHeight - marginY, RED);
+        int x = margin.x + (i * tileSize);
+        DrawLine(x, margin.y, x, screenHeight - margin.y, RED);
     }
     for (int i = 0; i <= ROWS; i++)
     {
-        int y = marginY + (i * tileSize);
-        DrawLine(marginX, y, screenWidth - marginX, y, RED);
+        int y = margin.y + (i * tileSize);
+        DrawLine(margin.y, y, screenWidth - margin.x, y, RED);
     }
 
     Vector2 size = (Vector2){tileSize, tileSize};
-    Vector2 margin = (Vector2){marginX, marginY};
     DrawRectangleV(Vector2Add(Vector2Scale(apple.position, tileSize), margin), size, RED);
     for (int i = 0; i < snake.bodySize; i++)
     {
@@ -258,7 +290,12 @@ void Draw(void)
     }
 
     DrawText(TextFormat("Score: %i", score), 10, 10, 20, BLACK);
-    if (pause)
+    if (victory)
+    {
+        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 60) / 2) + 2, (screenHeight / 2) - 60 + 2, 60, BLACK);
+        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 60) / 2), (screenHeight / 2) - 60, 60, GOLD);
+    }
+    else if (pause)
         DrawText("GAME PAUSED", (screenWidth / 2) - (MeasureText("GAME PAUSED", 50) / 2), (screenHeight / 2) - 50, 50, Fade(GRAY, 0.8f));
 
     EndDrawing();

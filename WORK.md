@@ -1,7 +1,8 @@
 ### Todo
 
 - Victory screen.
+- Die screen.
+- Visuals.
+- Main menu.
 
 ### Bugs
-
-- Board breaks if with is not enough
