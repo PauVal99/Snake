@@ -41,7 +41,9 @@ const static int maxBodySize = ROWS * COLUMNS;
 const static float stepTime = 0.25f;
 static int screenWidth = 720;
 static int screenHeight = 720;
-static float tileSize = 36;
+static int boardSize = 576;
+const static int minMarginPercent = 10;
+static float tileSize = 28.8f;
 
 static Snake snake;
 static Apple apple;
@@ -51,6 +53,7 @@ static float timer = 0.0f;
 static void Init(void);
 static void Update(void);
 static void Draw(void);
+static void Eat(void);
 static void InputDirection(void);
 
 Snake CreateSnake(int initBodySize, int maxBodySize);
@@ -75,7 +78,6 @@ void Init(void)
     InitWindow(screenWidth, screenHeight, "Snake 🐍");
     SetWindowMinSize(480, 480);
     SetTargetFPS(60);
-    tileSize = (screenWidth, screenHeight) / ROWS;
     snake = CreateSnake(initBodySize, maxBodySize);
     apple = CreateApple(snake);
 }
@@ -159,14 +161,18 @@ void Update(void)
         }
     }
 
+    Eat();
+    InputDirection();
+}
+
+void Eat(void)
+{
     if ((snake.body[HEAD].position.x == apple.position.x) && (snake.body[HEAD].position.y == apple.position.y))
     {
         snake.body[HEAD].apple = true;
         apple.position = GetValidApplePosition(snake);
         score++;
     }
-
-    InputDirection();
 }
 
 void InputDirection(void)
@@ -183,23 +189,49 @@ void InputDirection(void)
 
 void Draw(void)
 {
+    screenWidth = GetScreenWidth();
+    screenHeight = GetScreenHeight();
+    float marginX = 72.0f;
+    float marginY = 72.0f;
+    if (screenHeight <= screenWidth)
+    {
+        marginY = (float)(screenHeight * minMarginPercent) / 100;
+        boardSize = screenHeight - marginY - marginY;
+        marginX = (float)(screenWidth - boardSize) / 2;
+    }
+    else
+    {
+        marginX = (float)(screenWidth * minMarginPercent) / 100;
+        boardSize = screenHeight - marginX - marginX;
+        marginY = (float)(screenHeight - boardSize) / 2;
+    }
+
+    tileSize = (float)boardSize / ROWS;
+
     BeginDrawing();
 
     ClearBackground(GREEN);
 
-    for (int i = 0; i < screenHeight / tileSize; i++)
-        DrawLine(i * tileSize, 0, i * tileSize, screenHeight, RED);
-    for (int i = 0; i < screenWidth / tileSize; i++)
-        DrawLine(0, i * tileSize, screenWidth, i * tileSize, RED);
+    for (int i = 0; i <= COLUMNS; i++)
+    {
+        int x = marginX + (i * tileSize);
+        DrawLine(x, marginY, x, screenHeight - marginY, RED);
+    }
+    for (int i = 0; i <= ROWS; i++)
+    {
+        int y = marginY + (i * tileSize);
+        DrawLine(marginX, y, screenWidth - marginX, y, RED);
+    }
 
     Vector2 size = (Vector2){tileSize, tileSize};
-    DrawRectangleV(Vector2Scale(apple.position, tileSize), size, RED);
+    Vector2 margin = (Vector2){marginX, marginY};
+    DrawRectangleV(Vector2Add(Vector2Scale(apple.position, tileSize), margin), size, RED);
     for (int i = 0; i < snake.bodySize; i++)
     {
+        Color color = BLACK;
         if (snake.body[i].apple)
-            DrawRectangleV(Vector2Scale(snake.body[i].position, tileSize), size, BROWN);
-        else
-            DrawRectangleV(Vector2Scale(snake.body[i].position, tileSize), size, BLACK);
+            color = BROWN;
+        DrawRectangleV(Vector2Add(Vector2Scale(snake.body[i].position, tileSize), margin), size, color);
     }
 
     DrawText(TextFormat("Score: %i", score), 10, 10, 20, BLACK);
