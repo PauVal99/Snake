@@ -26,6 +26,7 @@ typedef struct SnakeBody
 typedef struct Snake
 {
     Direction direction;
+    Direction prevDirection;
     int bodySize;
     SnakeBody body[ROWS * COLUMNS];
 } Snake;
@@ -50,6 +51,7 @@ static float timer = 0.0f;
 static void Init(void);
 static void Update(void);
 static void Draw(void);
+static void InputDirection(void);
 
 Snake CreateSnake(int initBodySize, int maxBodySize);
 Apple CreateApple(Snake snake);
@@ -86,7 +88,7 @@ Apple CreateApple(Snake snake)
 
 Snake CreateSnake(int initBodySize, int maxBodySize)
 {
-    Snake snake = {RIGHT, initBodySize};
+    Snake snake = {RIGHT, RIGHT, initBodySize};
 
     for (int i = 0; i < initBodySize; i++)
     {
@@ -110,6 +112,7 @@ void Update(void)
     if (timer >= stepTime)
     {
         timer = 0.0f;
+        snake.prevDirection = snake.direction;
         for (int i = maxBodySize; i > HEAD; i--)
         {
             if ((i == snake.bodySize) && (snake.body[i - 1].apple))
@@ -163,13 +166,18 @@ void Update(void)
         score++;
     }
 
-    if (IsKeyDown(KEY_RIGHT) && (snake.direction != LEFT))
+    InputDirection();
+}
+
+void InputDirection(void)
+{
+    if (IsKeyDown(KEY_RIGHT) && (snake.prevDirection != LEFT))
         snake.direction = RIGHT;
-    else if (IsKeyDown(KEY_LEFT) && (snake.direction != RIGHT))
+    else if (IsKeyDown(KEY_LEFT) && (snake.prevDirection != RIGHT))
         snake.direction = LEFT;
-    else if (IsKeyDown(KEY_UP) && (snake.direction != DOWN))
+    else if (IsKeyDown(KEY_UP) && (snake.prevDirection != DOWN))
         snake.direction = UP;
-    else if (IsKeyDown(KEY_DOWN) && (snake.direction != UP))
+    else if (IsKeyDown(KEY_DOWN) && (snake.prevDirection != UP))
         snake.direction = DOWN;
 }
 
