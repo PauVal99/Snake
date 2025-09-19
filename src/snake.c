@@ -276,7 +276,7 @@ void Draw(void)
     for (int i = 0; i <= ROWS; i++)
     {
         int y = margin.y + (i * tileSize);
-        DrawLine(margin.y, y, screenWidth - margin.x, y, RED);
+        DrawLine(margin.x, y, screenWidth - margin.x, y, RED);
     }
 
     Vector2 size = (Vector2){tileSize, tileSize};
