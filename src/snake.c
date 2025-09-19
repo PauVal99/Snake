@@ -47,12 +47,15 @@ static float tileSize = 28.8f;
 
 static Snake snake;
 static Apple apple;
+static bool pause = false;
 static int score = 0;
 static float timer = 0.0f;
 
 static void Init(void);
+static void InitGame(void);
 static void Update(void);
 static void Draw(void);
+static void Die(void);
 static void Eat(void);
 static void InputDirection(void);
 
@@ -78,6 +81,13 @@ void Init(void)
     InitWindow(screenWidth, screenHeight, "Snake 🐍");
     SetWindowMinSize(480, 480);
     SetTargetFPS(60);
+    InitGame();
+}
+
+void InitGame(void)
+{
+    score = 0;
+    timer = 0.0f;
     snake = CreateSnake(initBodySize, maxBodySize);
     apple = CreateApple(snake);
 }
@@ -109,6 +119,11 @@ Snake CreateSnake(int initBodySize, int maxBodySize)
 
 void Update(void)
 {
+    if (IsKeyPressed(KEY_P))
+        pause = !pause;
+    if (pause)
+        return;
+
     timer += GetFrameTime();
 
     if (timer >= stepTime)
@@ -161,8 +176,16 @@ void Update(void)
         }
     }
 
+    Die();
     Eat();
     InputDirection();
+}
+
+void Die(void)
+{
+    for (int i = 4; i < snake.bodySize; i++)
+        if ((snake.body[HEAD].position.x == snake.body[i].position.x) && (snake.body[HEAD].position.y == snake.body[i].position.y))
+            InitGame();
 }
 
 void Eat(void)
@@ -235,6 +258,8 @@ void Draw(void)
     }
 
     DrawText(TextFormat("Score: %i", score), 10, 10, 20, BLACK);
+    if (pause)
+        DrawText("GAME PAUSED", (screenWidth / 2) - (MeasureText("GAME PAUSED", 50) / 2), (screenHeight / 2) - 50, 50, Fade(GRAY, 0.8f));
 
     EndDrawing();
 }

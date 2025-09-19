@@ -1,7 +1,7 @@
 ### Todo
 
-- Snake should die on collision.
-- Screen margin and hud.
 - Victory screen.
 
 ### Bugs
+
+- Board breaks if with is not enough
