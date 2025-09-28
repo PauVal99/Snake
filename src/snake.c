@@ -17,6 +17,14 @@ typedef enum
     LEFT = 3
 } Direction;
 
+typedef enum
+{
+    PLAY = 0,
+    PAUSE = 1,
+    VICTORY = 2,
+    DEAD = 3
+} State;
+
 typedef struct SnakeBody
 {
     bool apple;
@@ -48,8 +56,7 @@ static float tileSize = 28.8f;
 
 static Snake snake;
 static Apple apple;
-static bool pause = false;
-static bool victory = false;
+static State state = PLAY;
 static int score = 0;
 static float timer = 0.0f;
 
@@ -57,6 +64,8 @@ static void Init(void);
 static void InitGame(void);
 static void Update(void);
 static void Draw(void);
+static void Pause(void);
+static void Restart(void);
 static void Move(void);
 static void MoveHead(void);
 static void MoveBody(void);
@@ -112,30 +121,50 @@ Snake CreateSnake(int initBodySize, int maxBodySize)
     {
         snake.body[i].apple = false;
         snake.body[i].direction = RIGHT;
-        snake.body[i].position.x = 10 - i;
-        snake.body[i].position.y = 10;
+        snake.body[i].position = (Vector2){10.0f - i, 10.0f};
     }
     for (int i = initBodySize; i < maxBodySize; i++)
     {
         snake.body[i].apple = false;
-        snake.body[i].position.x = 0;
-        snake.body[i].position.y = 0;
+        snake.body[i].position = (Vector2){0.0f, 0.0f};
     }
     return snake;
 }
 
 void Update(void)
 {
-    if (IsKeyPressed(KEY_P))
-        pause = !pause;
-    if (pause)
+    Pause();
+    Restart();
+    if (state != PLAY)
         return;
-
     Move();
     Victory();
     Die();
     Eat();
     InputDirection();
+}
+
+void Restart(void)
+{
+    if (IsKeyPressed(KEY_ENTER))
+    {
+        if ((state == VICTORY) || (state == DEAD))
+        {
+            state = PLAY;
+            InitGame();
+        }
+    }
+}
+
+void Pause(void)
+{
+    if (IsKeyPressed(KEY_P))
+    {
+        if (state == PLAY)
+            state = PAUSE;
+        else if (state == PAUSE)
+            state = PLAY;
+    }
 }
 
 void Move(void)
@@ -207,23 +236,22 @@ void MoveHead(void)
 void Victory(void)
 {
     if (snake.bodySize == (ROWS * COLUMNS))
-    {
-        pause = true;
-        victory = true;
-    }
+        state = VICTORY;
 }
 
 void Die(void)
 {
-    if (victory)
+    if (state == VICTORY)
         return;
     for (int i = 4; i < snake.bodySize; i++)
         if ((snake.body[HEAD].position.x == snake.body[i].position.x) && (snake.body[HEAD].position.y == snake.body[i].position.y))
-            InitGame();
+            state = DEAD;
 }
 
 void Eat(void)
 {
+    if (state == VICTORY)
+        return;
     if ((snake.body[HEAD].position.x == apple.position.x) && (snake.body[HEAD].position.y == apple.position.y))
     {
         snake.body[HEAD].apple = true;
@@ -284,19 +312,38 @@ void Draw(void)
     for (int i = 0; i < snake.bodySize; i++)
     {
         Color color = BLACK;
-        if (snake.body[i].apple)
+        if (i == 0)
+            color = DARKGRAY;
+        else if (snake.body[i].apple)
             color = BROWN;
         DrawRectangleV(Vector2Add(Vector2Scale(snake.body[i].position, tileSize), margin), size, color);
     }
 
     DrawText(TextFormat("Score: %i", score), 10, 10, 20, BLACK);
-    if (victory)
+
+    DrawText("SNAKE", (screenWidth / 2) - (MeasureText("SNAKE", 60) / 2) + 2, (margin.y / 2) - 30 + 2, 60, BLACK);
+    DrawText("SNAKE", (screenWidth / 2) - (MeasureText("SNAKE", 60) / 2), (margin.y / 2) - 30, 60, RED);
+
+    switch (state)
     {
-        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 60) / 2) + 2, (screenHeight / 2) - 60 + 2, 60, BLACK);
-        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 60) / 2), (screenHeight / 2) - 60, 60, GOLD);
+    case VICTORY:
+        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 100) / 2) + 2, (screenHeight / 2) - 50 + 2, 100, BLACK);
+        DrawText("VICTORY", (screenWidth / 2) - (MeasureText("VICTORY", 100) / 2), (screenHeight / 2) - 50, 100, GOLD);
+        DrawText("Press ENTER to play again.", (screenWidth / 2) - (MeasureText("Press ENTER to play again.", 20) / 2), screenHeight - (margin.y / 2) - 10, 20, BLACK);
+        break;
+    case PAUSE:
+        DrawText("GAME PAUSED", (screenWidth / 2) - (MeasureText("GAME PAUSED", 50) / 2) + 2, (screenHeight / 2) - 25 + 2, 50, BLACK);
+        DrawText("GAME PAUSED", (screenWidth / 2) - (MeasureText("GAME PAUSED", 50) / 2), (screenHeight / 2) - 25, 50, GRAY);
+        DrawText("Press P to resume.", (screenWidth / 2) - (MeasureText("Press P to resume.", 20) / 2), screenHeight - (margin.y / 2) - 10, 20, BLACK);
+        break;
+    case DEAD:
+        DrawText("UPS", (screenWidth / 2) - (MeasureText("UPS", 100) / 2) + 2, (screenHeight / 2) - 50 + 2, 100, BLACK);
+        DrawText("UPS", (screenWidth / 2) - (MeasureText("UPS", 100) / 2), (screenHeight / 2) - 50, 100, GRAY);
+        DrawText("Press ENTER to play again.", (screenWidth / 2) - (MeasureText("Press ENTER to play again.", 20) / 2), screenHeight - (margin.y / 2) - 10, 20, BLACK);
+        break;
+    case PLAY:
+        break;
     }
-    else if (pause)
-        DrawText("GAME PAUSED", (screenWidth / 2) - (MeasureText("GAME PAUSED", 50) / 2), (screenHeight / 2) - 50, 50, Fade(GRAY, 0.8f));
 
     EndDrawing();
 }

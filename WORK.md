@@ -1,8 +1,9 @@
 ### Todo
 
-- Victory screen.
-- Die screen.
-- Visuals.
-- Main menu.
+- Visuals
+- Main menu
+- Sound
 
 ### Bugs
+
+- Pixel imprecision due to float operations
