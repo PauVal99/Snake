@@ -1,7 +1,6 @@
 ### Todo
 
 - Visuals
-- Main menu
 - Sound
 
 ### Bugs

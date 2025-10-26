@@ -1,8 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 #define ONE 1
 
 #define HEAD 0
@@ -45,6 +43,9 @@ typedef struct Apple
     Vector2 position;
 } Apple;
 
+static Sound startSound;
+static Texture2D snakeTexture;
+
 const static int initBodySize = 3;
 const static int maxBodySize = ROWS * COLUMNS;
 const static float stepTime = 0.25f;
@@ -61,9 +62,12 @@ static int score = 0;
 static float timer = 0.0f;
 
 static void Init(void);
+static void InitAudio(void);
+static void InitTextures(void);
 static void InitGame(void);
 static void Update(void);
 static void Draw(void);
+static void Close(void);
 static void Pause(void);
 static void Restart(void);
 static void Move(void);
@@ -86,17 +90,39 @@ int main(void)
         Update();
         Draw();
     }
-    CloseWindow();
+    Close();
     return 0;
 }
 
 void Init(void)
 {
+    SetTraceLogLevel(LOG_ALL);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(screenWidth, screenHeight, "Snake 🐍");
     SetWindowMinSize(480, 480);
     SetTargetFPS(60);
+    InitAudio();
+    InitTextures();
     InitGame();
+}
+
+void Close(void)
+{
+    UnloadSound(startSound);
+    UnloadTexture(snakeTexture);
+    CloseAudioDevice();
+    CloseWindow();
+}
+
+void InitAudio(void)
+{
+    InitAudioDevice();
+    startSound = LoadSound("resources/power_up_03.ogg");
+}
+
+void InitTextures(void)
+{
+    snakeTexture = LoadTexture("resources/snake.png");
 }
 
 void InitGame(void)
@@ -105,6 +131,7 @@ void InitGame(void)
     timer = 0.0f;
     snake = CreateSnake(initBodySize, maxBodySize);
     apple = CreateApple(snake);
+    PlaySound(startSound);
 }
 
 Apple CreateApple(Snake snake)
@@ -294,7 +321,7 @@ void Draw(void)
 
     BeginDrawing();
 
-    ClearBackground(GREEN);
+    ClearBackground(BLACK);
 
     for (int i = 0; i <= COLUMNS; i++)
     {
@@ -307,8 +334,16 @@ void Draw(void)
         DrawLine(margin.x, y, screenWidth - margin.x, y, RED);
     }
 
+    DrawTexture(snakeTexture, 0, 0, WHITE);
+
     Vector2 size = (Vector2){tileSize, tileSize};
     DrawRectangleV(Vector2Add(Vector2Scale(apple.position, tileSize), margin), size, RED);
+    Rectangle appleDest = {
+        Vector2Add(Vector2Scale(apple.position, tileSize), margin).x,
+        Vector2Add(Vector2Scale(apple.position, tileSize), margin).y,
+        size.x,
+        size.y};
+    DrawTexturePro(snakeTexture, (Rectangle){24.0f, 0.0f, 8.0f, 8.0f}, appleDest, (Vector2){4.0f, 4.0f}, 0.0f, WHITE);
     for (int i = 0; i < snake.bodySize; i++)
     {
         Color color = BLACK;

@@ -31,7 +31,7 @@ PLATFORM              ?= PLATFORM_DESKTOP
 # Define project variables
 PROJECT_NAME          ?= Snake
 PROJECT_VERSION       ?= 1.0
-PROJECT_BUILD_PATH    ?= .
+PROJECT_BUILD_PATH    ?= ..\build
 PROJECT_SOURCE_FILES  ?= $(wildcard *.c)
 
 RAYLIB_SRC_PATH       ?= C:\raylib\raylib\src
@@ -45,7 +45,7 @@ RAYLIB_LIBTYPE        ?= STATIC
 COMPILER_PATH         ?= C:\raylib\w64devkit\bin
 
 # Build mode for project: DEBUG or RELEASE
-BUILD_MODE            ?= RELEASE
+BUILD_MODE            ?= DEBUG
 
 # PLATFORM_WEB: Default properties
 BUILD_WEB_ASYNCIFY    ?= FALSE
